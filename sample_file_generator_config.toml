@@ -1,0 +1,4 @@
+base_path = "sample_data"
+num_of_lines = 40000
+depth = 3
+files_per_dir = 3

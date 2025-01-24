@@ -2,6 +2,19 @@ import os
 import random
 import string
 from datetime import datetime, timedelta
+import tomli
+
+def load_toml():
+    """
+    Loads the config file .toml
+
+    Returns:
+        config (dict): Parameters inside the .toml file
+    """
+    
+    with open("sample_file_generator_config.toml", "rb") as file:
+        config = tomli.load(file)
+    return config
 
 def generate_msidn():
     """
@@ -230,12 +243,42 @@ def create_sample_recharge_file(base_path, num_of_lines):
                               recharge_amt, payment_method, subscriber_category, location)
         x += 1
 
+def create_subdirectories(base_path, depth, files_per_dir, num_of_lines):
+    """
+    This function will create file(s) within the created subdirectories 
+    depending on the inputs.
+
+    Args:
+        base_path (dir): Main directory for the subdirectories.
+        depth (int): Number of subdirectories to be created.
+        files_per_dir (int): Number of files to be added in the subdirectories
+        num_of_lines (int): Input for create_sample_recharge_file() function. Refer
+                            to the function docstring.
+    """
+    os.makedirs(base_path, exist_ok=True)
+    
+    for d in range(1, depth + 1):
+        
+        sub_dir = os.path.join(base_path, f"subdir_{d}")
+        os.makedirs(sub_dir, exist_ok=True)
+        
+        # Create files in each subdirectory
+        for i in range(1, files_per_dir + 1):
+            create_sample_recharge_file(sub_dir, num_of_lines)
+
 def main():
     
-    base_path = "sample_data"
-    num_of_lines = 35000
+    config = load_toml()
     
-    create_sample_recharge_file(base_path, num_of_lines)
+    base_path = config["base_path"]
+    num_of_lines = config["num_of_lines"]
+    depth = config["depth"]
+    files_per_dir = config["files_per_dir"]
+    
+    create_subdirectories(base_path, depth, files_per_dir, num_of_lines)
+    
+    #Uncomment below to directly create file in the path
+    #create_sample_recharge_file(base_path, num_of_lines)
     
 if __name__ == "__main__":
     main()
