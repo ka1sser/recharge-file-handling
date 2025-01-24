@@ -147,6 +147,53 @@ def generate_content_for_file(file_path, msidn, event_date_time, service_class,
         
         file.write(content)
 
+def get_next_unique_num_from_files(base_path):
+    """
+    This function will output the next unique number for the filename
+    by checking the previous number in the base_path.
+
+    Args:
+        base_path (dir): Directory where the file(s) is/are located.
+
+    Returns:
+        next_num (str): The number to be used for the file creation.
+    """
+    
+    existing_files = os.listdir(base_path)
+    unique_nums = []
+    
+    for file in existing_files:
+        if file.startswith("EventFile_Recharge_") and file.endswith(".csv"):
+            # Extract the unique number (assumes format EvenFile_Recharge_XXX_date.csv)
+            parts = file.split("_")
+            if len(parts) >= 3 and parts[2].isdigit():
+                unique_nums.append(int(parts[2]))
+    
+
+    # Find the next unique number
+    next_num = max(unique_nums, default=0) + 1
+    next_num = f"{next_num:03}"
+    return next_num
+
+def generate_file_name(base_path):
+    """
+    This function generates the filename based on the unique number output
+    of the get_next_unique_num_from_files() function.
+
+    Args:
+        base_path (dir): Directory where the file(s) is/are located.
+
+    Returns:
+        file_name (str): String to use for the new unique filename
+    """
+    
+    unique_num = get_next_unique_num_from_files(base_path)
+    date = datetime.now().strftime("%d%m%Y_%H%M")
+    
+    file_name = f"EventFile_Recharge_{unique_num}_{date}.csv"
+    print(file_name)
+    return file_name
+
 def create_sample_recharge_file(base_path, num_of_lines):
     """
     This function will generate the file with contents generated randomly by different
@@ -158,11 +205,9 @@ def create_sample_recharge_file(base_path, num_of_lines):
     """
     os.makedirs(base_path, exist_ok=True)
     
-    date = datetime.now().strftime("%d%m%Y%_H%M")
-    
-    file_name = f"EvenFile_Recharge_{unique_num}_{date}.csv"
+    file_name = generate_file_name(base_path)
     file_path = os.path.join(base_path, file_name)
-
+    print(file_path)    
     with open(file_path, "w") as f:
         f.write("MSIDN,EventType,EventDateAndTime,ServiceClass,RechargeAmount,PaymentMethod,Category,Location\n")
     
@@ -182,11 +227,10 @@ def create_sample_recharge_file(base_path, num_of_lines):
 
 def main():
     
-    base_path = "sample"
+    base_path = "sample_data"
     num_of_lines = 5
     
     create_sample_recharge_file(base_path, num_of_lines)
-    
     
 if __name__ == "__main__":
     main()
