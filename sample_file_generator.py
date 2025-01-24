@@ -23,18 +23,23 @@ def generate_msidn():
 
 def generate_event_date_time():
     """
-    This function will generate a random date from current date to 30 days ago.
+    This function will generate a random date from current date to 30 days ago. Or will
+    generate the current date. Depending on your choice, just uncomment.
     
     Returns:
         now (str): This will be used as a data entry for the .csv file. Date follows
         the format: DaysMonthYearHourMinute (DDMMYYYYHHMM)
     """
-    
+    """
+    # For random dates in a 30-day period
     end = datetime.now()
     start = end - timedelta(days=30)
     
     random_date = start + timedelta(seconds=random.randint(0, int((end - start).total_seconds())))
     now = random_date.strftime("%d%m%Y%H%M")
+    """
+    #For current date
+    now = datetime.now().strftime("%d%m%Y%H%M")
     
     return now
 
@@ -191,7 +196,7 @@ def generate_file_name(base_path):
     date = datetime.now().strftime("%d%m%Y_%H%M")
     
     file_name = f"EventFile_Recharge_{unique_num}_{date}.csv"
-    print(file_name)
+
     return file_name
 
 def create_sample_recharge_file(base_path, num_of_lines):
@@ -207,7 +212,7 @@ def create_sample_recharge_file(base_path, num_of_lines):
     
     file_name = generate_file_name(base_path)
     file_path = os.path.join(base_path, file_name)
-    print(file_path)    
+        
     with open(file_path, "w") as f:
         f.write("MSIDN,EventType,EventDateAndTime,ServiceClass,RechargeAmount,PaymentMethod,Category,Location\n")
     
@@ -228,7 +233,7 @@ def create_sample_recharge_file(base_path, num_of_lines):
 def main():
     
     base_path = "sample_data"
-    num_of_lines = 5
+    num_of_lines = 35000
     
     create_sample_recharge_file(base_path, num_of_lines)
     
