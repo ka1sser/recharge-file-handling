@@ -306,24 +306,123 @@ def stats_payment_method(data, pm):
     """
     
     pm_data = data[data["PaymentMethod"] == pm]
-    total_pm_count = pm_data.count()
+    total_pm_count = len(pm_data)
     
     return total_pm_count
 
-def initialize_logger(log_path, log_filename):
-    log_file = os.path.join(log_path, log_filename)
-    logger = logging.getLogger("TimeBasedLogger")
-    logger.setLevel(logging.INFO)
+def initialize_logger(log_path, log_filename, logger_type):
+    """
+    Initializes a logger with a custom naming format for rotated files.
     
-    handler = TimedRotatingFileHandler(log_file, when="s", interval=10, backupCount=7)
-    handler.suffix("%Y-%m-%d_%H-%M-%S.log")
+    Args:
+        log_path (dir): Directory path for logs.
+        log_filename (str): Base filename for the logs.
+        logger_type (str): Logger type for distinguishing logs.
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+
+    os.makedirs(log_path, exist_ok=True)
+    log_file = os.path.join(log_path, log_filename)
+    
+    logger = logging.getLogger(logger_type)
+    logger.setLevel(logging.INFO)
+
+    handler = TimedRotatingFileHandler(log_file, when="s", interval=5, backupCount=7)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s : %(message)s")
     handler.setFormatter(formatter)
-    
+    #handler.suffix = "%d-%m-%Y_%H-%M-%S.log"
     logger.addHandler(handler)
-    
+
     return logger
-        
+
+
+
+def get_location_recharge_data(log_path, combined_df):
+    """
+    This function will output the data collected from the combined data frame via log
+
+    Args:
+        log_path (dir): Directory where the log will be outputted
+        combined_df (pandas.core.frame.DataFrame): Data frame containing the combined data of "Location" and "RechargeAmount"
+    """
+    
+    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    log_file_name = f"loc_and_total_recharge_amt - {current_date}.log"
+    loc_logger = initialize_logger(log_path, log_file_name, "location_handler")
+    
+    location_and_recharge = location_and_recharge_df(combined_df)
+    
+    x10_data = stats_loc_recharge(location_and_recharge, "X10")
+    x11_data = stats_loc_recharge(location_and_recharge, "X11")
+    x12_data = stats_loc_recharge(location_and_recharge, "X12")
+    x13_data = stats_loc_recharge(location_and_recharge, "X13")
+    
+    loc_logger.info(f"Analyzing Location and RechargeAmount data as of {current_date}...\n")
+    loc_logger.info("Here is the data for total RechargeAmount per Location:")
+    loc_logger.info(f"Location\t Total_RechargeAmount")
+    loc_logger.info(f"X10:\t\t {x10_data}")
+    loc_logger.info(f"X11:\t\t {x11_data}")
+    loc_logger.info(f"X12:\t\t {x12_data}")
+    loc_logger.info(f"X13:\t\t {x13_data}")
+    
+def get_category_recharge_data(log_path, combined_df):
+    """
+    This function will output the data collected from the combined data frame via log
+
+    Args:
+        log_path (dir): Directory where the log will be outputted
+        combined_df (pandas.core.frame.DataFrame): Data frame containing the combined data of "Category" and "RechargeAmount"
+    """
+    
+    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    log_file_name = f"cat_and_total_recharge_amt - {current_date}.log"
+    cat_logger = initialize_logger(log_path, log_file_name, "category_handler")
+    
+    cat_and_recharge = category_and_recharge_df(combined_df)
+    
+    
+    yth_data = stats_cat_recharge(cat_and_recharge, "YTH")
+    std_data = stats_cat_recharge(cat_and_recharge, "STD")
+    bsc_data = stats_cat_recharge(cat_and_recharge, "BSC")
+    spl_data = stats_cat_recharge(cat_and_recharge, "SPL")
+    
+    cat_logger.info(f"Analyzing Category and RechargeAmount data as of {current_date}...\n")
+    cat_logger.info("Here is the data for total RechargeAmount per Category:")
+    cat_logger.info(f"Category\t Total_RechargeAmount")
+    cat_logger.info(f"YTH:\t\t {yth_data}")
+    cat_logger.info(f"STD:\t\t {std_data}")
+    cat_logger.info(f"BSC:\t\t {bsc_data}")
+    cat_logger.info(f"SPL:\t\t {spl_data}")
+    
+def get_payment_method_data(log_path, combined_df):
+    """
+    This function will output the data collected from the data frame via log
+
+    Args:
+        log_path (dir): Directory where the log will be outputted
+        combined_df (pandas.core.frame.DataFrame): Data frame containing the data of "PaymentMethod"
+    """
+    
+    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    log_file_name = f"payment_method_count - {current_date}.log"
+    pm_logger = initialize_logger(log_path, log_file_name, "payment_handler")
+    
+    payment = payment_method_df(combined_df)
+    
+    
+    cash_data = stats_payment_method(payment, 1)
+    cc_data = stats_payment_method(payment, 2)
+    paytm_data = stats_payment_method(payment, 3)
+
+    pm_logger.info(f"Analyzing Location and RechargeAmount data as of {current_date}...\n")
+    pm_logger.info("Here is the data for total RechargeAmount per Location:")
+    pm_logger.info(f"PaymentMethod\t\t Total_Count")
+    pm_logger.info(f"Cash:\t\t\t\t {cash_data}")
+    pm_logger.info(f"Credit Card:\t\t {cc_data}")
+    pm_logger.info(f"Paytm:\t\t\t\t {paytm_data}")
+    
 def main():
     
     config = import_config_file()
@@ -332,17 +431,34 @@ def main():
     
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
+
+    try:
+        script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
+        get_location_recharge_data(log_path, combined_df)
+        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+    except Exception as e:
+        script_log.error(f"An error occured while analyzing 'Location' and 'RechargeAmount' data: {e}\n")
     
-    loc_logger = initialize_logger(log_path, "loc_and_total_recharge_amt.log")
-    cat_logger = initialize_logger(log_path, "cat_and_total_recharge_amt.log")
-    payment_logger = initialize_logger(log_path, "payment_data.log")
-    script_log = initialize_logger(log_path, "recharge_file_reader.log")
+    try:    
+        script_log.info("Analyzing 'Category' and 'RechargeAmount' data...")
+        get_category_recharge_data(log_path, combined_df)
+        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+    except Exception as e:
+        script_log.error(f"An error occured while analyzing 'Category' and 'RechargeAmount' data: {e}\n")
     
-    
+    try:
+        script_log.info("Analyzing 'PaymentMethod' data...")
+        get_payment_method_data(log_path, combined_df)
+        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+    except Exception as e:
+        script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")
+        
 if __name__ == "__main__":
     config = import_config_file()
     log_path = import_log_path(config)
-    script_log = initialize_logger(log_path, "recharge_file_reader.log")
+    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    
+    script_log = initialize_logger(log_path, f"recharge_file_reader - {current_date}.log", "script_handler")
     
     script_log.info("##############################################################################")
     script_log.info("Script is called...")
