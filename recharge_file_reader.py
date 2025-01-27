@@ -246,7 +246,7 @@ def stats_cat_recharge(data, cat):
     This function gets the sum of "RechargeAmount" per "Category"
 
     Args:
-        data (pandas.core.frame.DataFrame): Data frame that contains the "Location" and "RechargeAmount" data columns
+        data (pandas.core.frame.DataFrame): Data frame that contains the "Category" and "RechargeAmount" data columns
         cat (str): A string containing the value from "Category" namely "YTH", "STD", "BSC", and "SPL"
 
     Returns:
@@ -257,6 +257,42 @@ def stats_cat_recharge(data, cat):
     cat_data_total_recharge = cat_data["RechargeAmount"].sum()
     
     return cat_data_total_recharge
+
+def payment_method_df(data):
+    """
+    This function isolates the data with "PaymentMethod" as the key or header to the column.
+    It creates a new data frame using the this column.
+
+    Args:
+        data (pandas.core.frame.DataFrame): Argument should be a dataframe that contains the data
+
+    Returns:
+        payment_method (pandas.core.frame.DataFrame): Returns a new data frame that only consist of "PaymentMethod"
+    """
+    
+    df = pd.DataFrame(data)
+    payment_method = df[["PaymentMethod"]]
+
+    return payment_method
+
+
+def stats_payment_method(data, pm):
+    """
+    This function gets the count of "PaymentMethod" per value
+
+    Args:
+        data (pandas.core.frame.DataFrame): Data frame that contains the "PaymentMethod" data column
+        pm (int): An int containing the value from "PaymentMethod" namely 1, 2, and 3
+
+    Returns:
+        total_pm_count (int): Count of the inputted pm
+    """
+    
+    pm_data = data[data["PaymentMethod"] == pm]
+    total_pm_count = pm_data.count()
+    
+    return total_pm_count
+
         
 def main():
     
@@ -266,20 +302,6 @@ def main():
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
     
-    loc_and_recharge = location_and_recharge_df(combined_df)
-    
-    print(stats_loc_recharge(loc_and_recharge, "X10"))
-    print(stats_loc_recharge(loc_and_recharge, "X11"))
-    print(stats_loc_recharge(loc_and_recharge, "X12"))
-    print(stats_loc_recharge(loc_and_recharge, "X13"))
-    
-    print()
-    
-    cat_and_recharge = category_and_recharge_df(combined_df)
-    print(stats_cat_recharge(cat_and_recharge, "YTH"))
-    print(stats_cat_recharge(cat_and_recharge, "STD"))
-    print(stats_cat_recharge(cat_and_recharge, "BSC"))
-    print(stats_cat_recharge(cat_and_recharge, "SPL"))
     
     
 if __name__ == "__main__":
