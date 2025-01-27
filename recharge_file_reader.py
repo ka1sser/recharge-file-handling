@@ -11,11 +11,13 @@ It shall:
     
 """
 
+import logging.handlers
 import os
 import tomli
 import pandas as pd
 from datetime import datetime
-import glob
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 def import_config_file():
     
@@ -32,10 +34,10 @@ def import_config_file():
         
     return config
 
-def import_file_path(config):
+def import_input_path(config):
     
     """
-    This function will import the file path given in the config file.
+    This function will import the input path given in the config file.
 
     Args:
         config (dict): .toml file for the inputs
@@ -48,6 +50,22 @@ def import_file_path(config):
     
     return input_path
 
+def import_log_path(config):
+    
+    """
+    This function will import the log path given in the config file.
+
+    Args:
+        config (dict): .toml file for the inputs
+
+    Returns:
+        log_path (dir): Returns the log path from the config file
+    """
+    
+    log_path = config["directories"]["log_path"]
+    
+    return log_path
+
 def get_sub_dir(input_path):
     
     """
@@ -59,7 +77,6 @@ def get_sub_dir(input_path):
     Returns:
         list_sub_dir (list): List of existing subdirectories
     """
-    
     get_sub_dir = os.listdir(input_path)
     
     list_sub_dir = []
@@ -293,17 +310,46 @@ def stats_payment_method(data, pm):
     
     return total_pm_count
 
+def initialize_logger(log_path, log_filename):
+    log_file = os.path.join(log_path, log_filename)
+    logger = logging.getLogger("TimeBasedLogger")
+    logger.setLevel(logging.INFO)
+    
+    handler = TimedRotatingFileHandler(log_file, when="s", interval=10, backupCount=7)
+    handler.suffix("%Y-%m-%d_%H-%M-%S.log")
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s : %(message)s")
+    handler.setFormatter(formatter)
+    
+    logger.addHandler(handler)
+    
+    return logger
         
 def main():
     
     config = import_config_file()
-    input_path = import_file_path(config)
+    input_path = import_input_path(config)
+    log_path = import_log_path(config)
     
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
     
+    loc_logger = initialize_logger(log_path, "loc_and_total_recharge_amt.log")
+    cat_logger = initialize_logger(log_path, "cat_and_total_recharge_amt.log")
+    payment_logger = initialize_logger(log_path, "payment_data.log")
+    script_log = initialize_logger(log_path, "recharge_file_reader.log")
     
     
 if __name__ == "__main__":
+    config = import_config_file()
+    log_path = import_log_path(config)
+    script_log = initialize_logger(log_path, "recharge_file_reader.log")
+    
+    script_log.info("##############################################################################")
+    script_log.info("Script is called...")
+    script_log.info("##############################################################################\n")
     
     main()
+    
+    script_log.info("##############################################################################")
+    script_log.info("Script executed...")
+    script_log.info("##############################################################################\n")
