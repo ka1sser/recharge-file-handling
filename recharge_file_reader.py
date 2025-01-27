@@ -187,6 +187,43 @@ def combine_matched_csv(files):
     
     return combined_df
 
+def location_and_recharge_df(data):
+    """
+    This function isolates the data with "Location" and "RechargeAmount" as the key or header to the column.
+    It creates a new data frame using the these columns.
+
+    Args:
+        data (pandas.core.frame.DataFrame): Argument should be a dataframe that contains the data
+
+    Returns:
+        location_and_recharge (pandas.core.frame.DataFrame): Returns a new data frame that only consist
+                                                            of "Location" and "RechargeAmount"
+    """
+    
+    df = pd.DataFrame(data)
+    location_and_recharge = df[["Location", "RechargeAmount"]]
+    
+    return location_and_recharge
+
+def stats_loc_recharge(data, loc):
+    """
+    This function gets the 
+
+    Args:
+        data (pandas.core.frame.DataFrame): Data frame that contains the "Location" and "RechargeAmount" data columns
+        loc (str): A string containing the value from "Location" namely "X10", "X11", "X12", and "X13"
+
+    Returns:
+        loc_data_total_recharge (int): Sum of the total "RechargeAmount" from data that has the value inputted in loc
+    """
+    
+    
+    loc_data = data[data["Location"] == loc]
+    loc_data_total_recharge = loc_data["RechargeAmount"].sum()
+    
+    return loc_data_total_recharge
+    
+        
 def main():
     
     config = import_config_file()
@@ -195,7 +232,13 @@ def main():
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
     
-    print(type(combined_df))
+    loc_and_recharge = location_and_recharge_df(combined_df)
+    
+    print(stats_loc_recharge(loc_and_recharge, "X10"))
+    print(stats_loc_recharge(loc_and_recharge, "X11"))
+    print(stats_loc_recharge(loc_and_recharge, "X12"))
+    print(stats_loc_recharge(loc_and_recharge, "X13"))
+    
     
 if __name__ == "__main__":
     
