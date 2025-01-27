@@ -11,6 +11,8 @@ It shall:
 import os
 import tomli
 import pandas as pd
+from datetime import datetime
+import glob
 
 def import_config_file():
     
@@ -64,7 +66,7 @@ def get_sub_dir(input_path):
 
     return list_sub_dir
 
-def check_files_per_dir(input_path):
+def combined_files_per_dir(input_path):
     
     """
     This function will check the files in each directory and compile it in one list.
@@ -77,24 +79,54 @@ def check_files_per_dir(input_path):
     
     files = []
     for sub_dir in sub_dirs:
-        files_in_dir = os.listdir(sub_dir)
-        files = files + files_in_dir
+        files_in_sub_dir = os.listdir(sub_dir)
+        files = files + files_in_sub_dir
 
     return files
+
+def check_filename(files):
     
-def import_csv(csv_file):
+    """
+    This function checks the filename that has the current date of when the script
+    was executed. The date format %d%m%Y outputs DDMMYYYY (ex. 27012025)
+
+    Args:
+        files (list): This argument should be a list containing the filenames
+                      to be checked.
+
+    Returns:
+        matched_files (list): Returns a list of matching file names. To be os.path.joined() to
+        the original path for it to be accessed properly.
+    """
     
-    dataset_raw = pd.read_csv(csv_file)
+    current_date = datetime.now()
+    formatted_date = current_date.strftime("%d%m%Y")
     
-    return dataset_raw
+    matched_files = []
+    for file in files:
+        if file.find(formatted_date) != -1:
+            matched_files.append(file)
+    
+    return matched_files
+    
+def read_csv(file):
+    
+    csv = pd.read_csv(file)
+    
+    return csv
 
 def main():
     
     config = import_config_file()
     input_path = import_file_path(config)
-    print(type(config))
-    print()
-    print(check_files_per_dir(input_path))
+    files = (combined_files_per_dir(input_path))
+    
+    matched_files = check_filename(files)
+    #file = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/sample_data/subdir_1/EventFile_Recharge_006_27012025_0926.csv"
+        
+    #csv = read_csv(file)
+    #print(csv.head(3))
+    #print(csv["Category"].head(5))
     
 if __name__ == "__main__":
     
