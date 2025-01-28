@@ -7,3 +7,6 @@ db_host = "localhost"
 db_name = "logdata"
 db_user = "postgres"
 db_password = "training"
+
+["operation"]
+send_to_database = "YES"

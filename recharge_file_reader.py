@@ -496,15 +496,28 @@ def create_table(cursor):
         
         script_log.info("Creating table...")
         
-        query = "CREATE TABLE IF NOT EXISTS logs (log_file VARCHAR(255));"
-        script_log.info(f"Executing query: '{query}'\n")
+        query = "CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, file_name VARCHAR(255), log_content TEXT);"
+        script_log.info(f"Executing query to create table 'logs' if not exists.")
         cursor.execute(query)
         
-        script_log.info("Table created or already exists.")
+        script_log.info("Table created or already exists.\n")
         
     except Exception as e:
         script_log.error(f"An error occured: {e}\n")
+
+def insert_entire_logs(cursor, log_folder):
+    try:
+        for file_name in os.listdir(log_folder):
+            file_path = os.path.abspath(os.path.join(log_folder, file_name))
+            if os.path.isfile(file_path) and file_name.endswith(".log"):
+                with open(file_path, 'r') as file:
+                    content = file.read()
+                    cursor.execute("INSERT INTO logs (file_name, log_content) VALUES (%s, %s);", (file_name, content))
+            script_log.info(f"Inserted log file: {file_name} as a single row.")
     
+    except Exception as e:
+        script_log.error(f"Failed to insert log file: {e}\n")
+        
 def main():
     
     config = import_config_file()
@@ -513,8 +526,9 @@ def main():
     
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
+    send_to_database_operation = config["operation"]["send_to_database"]
     
-    """try:
+    try:
         script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
         get_location_recharge_data(log_path, combined_df)
         script_log.info("Done with the analysis. Refer to the logs for details.\n")
@@ -533,21 +547,29 @@ def main():
         get_payment_method_data(log_path, combined_df)
         script_log.info("Done with the analysis. Refer to the logs for details.\n")
     except Exception as e:
-        script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")"""
+        script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")
     
-    try:    
-        db_connection = connect_to_db(config)
-        db_cursor = open_cursor_db(db_connection)
-        print(type(db_cursor))
-        create_table(db_cursor)
-        
-        db_connection.commit()
-    except Exception as e:
-        script_log.warning(f"An error has occured: {e}")
-    finally:
-        db_cursor.close()
-        db_connection.close()
-        
+    if send_to_database_operation == "YES":
+        script_log.info(f"Operation send_to_database: {send_to_database_operation}")
+        script_log.info("Executing transfer...")
+        try:    
+            db_connection = connect_to_db(config)
+            db_cursor = open_cursor_db(db_connection)
+            create_table(db_cursor)
+            insert_entire_logs(db_cursor, log_path)
+            db_connection.commit()
+            
+        except Exception as e:
+            script_log.warning(f"An error has occured: {e}")
+        finally:
+            script_log.info("Closing connection...")
+            db_cursor.close()
+            db_connection.close()
+            script_log.info("Connection closed.")
+    
+    script_log.info(f"Operation send_to_database: {send_to_database_operation}")
+    script_log.info("Skipping copying of files to postgres database...")
+    
 if __name__ == "__main__":
     config = import_config_file()
     log_path = import_log_path(config)
