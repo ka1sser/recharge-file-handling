@@ -18,6 +18,7 @@ import pandas as pd
 from datetime import datetime
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import psycopg2
 
 def import_config_file():
     
@@ -431,7 +432,35 @@ def get_payment_method_data(log_path, combined_df):
     pm_logger.info(f"Cash:\t\t\t\t {cash_data}")
     pm_logger.info(f"Credit Card:\t\t {cc_data}")
     pm_logger.info(f"Paytm:\t\t\t\t {paytm_data}")
+
+def connect_to_db(config):
+    """
+    This function will create a connection for the postgres db
+
+    Args:
+        config (dict): Config file (.toml) for the script
+
+    Returns:
+        connection (psycopg2.extensions.connection): Connection instance for accessing the postgres db
+    """
+    db_host = config["database"]["db_host"]
+    db_name = config["database"]["db_name"]
+    db_user = config["database"]["db_user"]
+    db_password = config["database"]["db_password"]
     
+    try:
+        connection = psycopg2.connect(
+            dbname = db_name,
+            user = db_user,
+            password = db_password,
+            host = db_host
+        )
+
+        return connection
+    
+    except Exception as e:
+        script_log.error(f"An error occured: {e}")
+      
 def main():
     
     config = import_config_file()
@@ -466,8 +495,9 @@ if __name__ == "__main__":
     config = import_config_file()
     log_path = import_log_path(config)
     current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    
     script_log = initialize_logger(log_path, f"recharge_file_reader - {current_date}.log", "script_handler")
+    
+    print(type(connect_to_db(config)))
     
     script_log.info("##############################################################################")
     script_log.info("Script is called...")

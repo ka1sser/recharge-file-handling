@@ -1,3 +1,9 @@
 ["directories"]
 input_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/sample_data"
 log_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/logs"
+
+["database"]
+db_host = "localhost"
+db_name = "logdata"
+db_user = "postgres"
+db_password = "training"
