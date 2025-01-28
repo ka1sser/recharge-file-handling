@@ -147,7 +147,7 @@ def check_filename(files):
                 if file.endswith('.csv'):
                     matched_files.append(file)
         
-            return matched_files
+        return matched_files
     
     except Exception as e:
         script_log.error("An error occured: {e}")
@@ -457,6 +457,9 @@ def connect_to_db(config):
             host = db_host
         )
 
+        script_log.info(f"Creating connection for user:{db_user} to database:{db_name}")
+        script_log.info(f"Connection status: {connection.status}\n")
+
         return connection
     
     except Exception as e:
@@ -467,20 +470,41 @@ def open_cursor_db(connection):
     This function will create a cursor instance to be able to execute commands
 
     Args:
-        connection (_type_): _description_
+        connection (psycopg2.extensions.connection): Connection instance for accessing the postgres db
 
     Returns:
-        _type_: _description_
+        cursor (psycopg2.extensions.cursor): Cursor instance for executing commands 
     """
     
     try:
-        cur = connection.cursor()
-        
-        return cur
+        cursor = connection.cursor()
+        script_log.info("Creating cursor for command execution...")
+        return cursor
     
     except Exception as e:
         script_log.error(f"An error has occured: {e}")
 
+def create_table(cursor):
+    """
+    This function executes a PostgreSQL query to create a table
+
+    Args:
+        cursor (extensions): Cursor instance for executing commands
+    """
+    
+    try:
+        
+        script_log.info("Creating table...")
+        
+        query = "CREATE TABLE IF NOT EXISTS logs (log_file VARCHAR(255));"
+        script_log.info(f"Executing query: '{query}'\n")
+        cursor.execute(query)
+        
+        script_log.info("Table created or already exists.")
+        
+    except Exception as e:
+        script_log.error(f"An error occured: {e}\n")
+    
 def main():
     
     config = import_config_file()
@@ -489,8 +513,8 @@ def main():
     
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
-
-    try:
+    
+    """try:
         script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
         get_location_recharge_data(log_path, combined_df)
         script_log.info("Done with the analysis. Refer to the logs for details.\n")
@@ -509,15 +533,26 @@ def main():
         get_payment_method_data(log_path, combined_df)
         script_log.info("Done with the analysis. Refer to the logs for details.\n")
     except Exception as e:
-        script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")
+        script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")"""
+    
+    try:    
+        db_connection = connect_to_db(config)
+        db_cursor = open_cursor_db(db_connection)
+        print(type(db_cursor))
+        create_table(db_cursor)
+        
+        db_connection.commit()
+    except Exception as e:
+        script_log.warning(f"An error has occured: {e}")
+    finally:
+        db_cursor.close()
+        db_connection.close()
         
 if __name__ == "__main__":
     config = import_config_file()
     log_path = import_log_path(config)
     current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
     script_log = initialize_logger(log_path, f"recharge_file_reader - {current_date}.log", "script_handler")
-    
-    print(type(connect_to_db(config)))
     
     script_log.info("##############################################################################")
     script_log.info("Script is called...")
