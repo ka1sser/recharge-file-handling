@@ -139,13 +139,17 @@ def check_filename(files):
     current_date = datetime.now()
     formatted_date = current_date.strftime("%d%m%Y")
     
-    matched_files = []
-    for file in files:
-        if file.find(formatted_date) != -1:
-            if file.endswith('.csv'):
-                matched_files.append(file)
+    try:
+        matched_files = []
+        for file in files:
+            if file.find(formatted_date) != -1:
+                if file.endswith('.csv'):
+                    matched_files.append(file)
+        
+            return matched_files
     
-    return matched_files
+    except Exception as e:
+        script_log.error("An error occured: {e}")
 
 def get_csv_files_to_read(input_path):
     """
@@ -195,14 +199,19 @@ def combine_matched_csv(files):
     Returns:
         combined_df (pandas.core.frame.DataFrame): Returns a data frame with combined data from all the listed csv files
     """
-    csv_list = []
-    for file in files:
-        df = read_csv(file)
-        csv_list.append(df)
-        
-    combined_df = pd.concat(csv_list, ignore_index=True)
     
-    return combined_df
+    try:
+        csv_list = []
+        for file in files:
+            df = read_csv(file)
+            csv_list.append(df)
+            
+        combined_df = pd.concat(csv_list, ignore_index=True)
+        
+        return combined_df
+    
+    except Exception as e:
+        script_log.error(f"An error has occured: {e}\n")
 
 def location_and_recharge_df(data):
     """
