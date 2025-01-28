@@ -443,6 +443,7 @@ def connect_to_db(config):
     Returns:
         connection (psycopg2.extensions.connection): Connection instance for accessing the postgres db
     """
+    
     db_host = config["database"]["db_host"]
     db_name = config["database"]["db_name"]
     db_user = config["database"]["db_user"]
@@ -460,7 +461,26 @@ def connect_to_db(config):
     
     except Exception as e:
         script_log.error(f"An error occured: {e}")
-      
+
+def open_cursor_db(connection):
+    """
+    This function will create a cursor instance to be able to execute commands
+
+    Args:
+        connection (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
+    try:
+        cur = connection.cursor()
+        
+        return cur
+    
+    except Exception as e:
+        script_log.error(f"An error has occured: {e}")
+
 def main():
     
     config = import_config_file()
