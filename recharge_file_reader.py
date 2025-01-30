@@ -484,11 +484,87 @@ def create_table_locations_stats(cursor):
         
         cursor.execute(query)
         
-        script_log.info("Table created or already exists.\n")
+        script_log.info("Table created or already exists.")
         
     except Exception as e:
         script_log.error(f"An error occured: {e}\n")
-       
+
+def insert_location_data(csv_file, connection):
+    """
+    This function inserts the location data to the table.
+
+    Args:
+        csv_file (file): CSV file outputted by the script
+        connection (psycopg2.extensions.connection): Connection to the database
+    """
+    try:
+        cursor = connection.cursor()
+        
+        df = pd.read_csv(csv_file)
+        table = "total_recharge_amount_per_location"
+        for index, row in df.iterrows():
+            query = f"INSERT INTO {table} (Location, Total_RechargeAmount) VALUES (%s, %s);"
+            cursor.execute(query, (row["Location"], row["Total_RechargeAmount"]))
+        
+        connection.commit()
+        script_log.info(f"Successfully inserted data from {csv_file} into '{table}' table\n")
+    
+    except Exception as e:
+        script_log.error(f"Error inserting data into database: {e}\n")
+    
+    finally:
+        cursor.close()
+
+def create_table_category_stats(cursor):
+    """
+    This function will create a table for the category-rechargeamount data
+
+    Args:
+        cursor (psycopg2.extensions.cursor): Instance of the cursor to execute data
+    """
+    
+    try:
+        
+        script_log.info("Creating table...")
+        table_name = "total_recharge_amount_per_category"
+        query = f"CREATE TABLE IF NOT EXISTS {table_name} (id SERIAL PRIMARY KEY, Category VARCHAR(255), Total_RechargeAmount INT);"
+        script_log.info(f"Executing query to create table '{table_name}' if not exists.")
+        
+        cursor.execute(query)
+        
+        script_log.info("Table created or already exists.")
+        
+    except Exception as e:
+        script_log.error(f"An error occured: {e}\n")
+
+def insert_category_data(csv_file, connection):
+    """
+    This function inserts the location data to the table.
+
+    Args:
+        csv_file (file): CSV file outputted by the script
+        connection (psycopg2.extensions.connection): Connection to the database
+    """
+    try:
+        cursor = connection.cursor()
+        
+        df = pd.read_csv(csv_file)
+        table = "total_recharge_amount_per_category"
+        
+        for index, row in df.iterrows():
+            query = f"INSERT INTO {table} (Category, Total_RechargeAmount) VALUES (%s, %s);"
+            cursor.execute(query, (row["Category"], row["Total_RechargeAmount"]))
+        
+        connection.commit()
+        script_log.info(f"Successfully inserted data from {csv_file} into '{table}' table\n")
+    
+    except Exception as e:
+        script_log.error(f"Error inserting data into database: {e}\n")
+    
+    finally:
+        connection.commit()
+        cursor.close()
+        
 def main():
     
     config = import_config_file()
@@ -551,6 +627,18 @@ def main():
                 new_cursor = cursor_for_new_db(new_connection)
                 
                 create_table_locations_stats(new_cursor)
+                latest_csv_file = max(
+                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_location")],
+                    key=os.path.getctime
+                    )
+                insert_location_data(latest_csv_file, new_connection)
+                
+                create_table_category_stats(new_cursor)
+                latest_csv_file = max(
+                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_category")],
+                    key=os.path.getctime
+                    )
+                insert_category_data(latest_csv_file, new_connection)
                 
                 new_connection.commit()
             
