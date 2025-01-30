@@ -382,7 +382,14 @@ def open_cursor_db(connection):
         script_log.error(f"An error has occured: {e}")
 
 def create_recharge_file_stats_db(db_name, cursor, connection):
+    """
+    This function will create a database to handle the recharge file stats by executing the commands in the default database
+    then close the connection and the cursor to make way to create a new connection and cursor.
     
+    Args:
+        cursor (psycopg2.extensions.cursor): Cursor to execute in the database
+        connection (psycopg2.extensions.connection): Connection to the database
+    """
     script_log.info(f"Creating database '{db_name}'")
     cursor.connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
     
@@ -410,7 +417,16 @@ def create_recharge_file_stats_db(db_name, cursor, connection):
         connection.close()
  
 def connect_to_new_db(db_name, config):   
-    
+    """
+    This function will create a new connection to the newly created database for recharge file stats.
+
+    Args:
+        db_name (str): Name of the database to connect to
+        config (dict): .toml file containing parameters
+
+    Returns:
+        new_connection (psycopg2.extensions.connection): Connection established with the new database
+    """
     db_host = config["database"]["db_host"]
     db_user = config["database"]["db_user"]
     db_password = config["database"]["db_password"]
@@ -432,6 +448,15 @@ def connect_to_new_db(db_name, config):
         script_log.error(f"An error occured: {e}\n")
 
 def cursor_for_new_db(connection):
+    """
+    This function will create a new cursor for this database connection to execute commands.
+
+    Args:
+        connection (psycopg2.extensions.connection): Connection to the database
+
+    Returns:
+        cursor (psycopg2.extensions.cursor): Returns a cursor instance to be used to execute commands
+    """
     
     try:
         cursor = connection.cursor()
@@ -443,6 +468,13 @@ def cursor_for_new_db(connection):
         script_log.error(f"An error has occured: {e}")
         
 def create_table_locations_stats(cursor):
+    """
+    This function will create a table for the location-rechargeamount data
+
+    Args:
+        cursor (psycopg2.extensions.cursor): Instance of the cursor to execute data
+    """
+    
     try:
         
         script_log.info("Creating table...")
@@ -512,7 +544,7 @@ def main():
             db_cursor = open_cursor_db(db_connection)
             
             db_name = "recharge_file_stats_db" 
-            create_recharge_file_stats_db(db_name,db_cursor, db_connection)
+            create_recharge_file_stats_db(db_name, db_cursor, db_connection)
             
             try:
                 new_connection = connect_to_new_db(db_name, config)
