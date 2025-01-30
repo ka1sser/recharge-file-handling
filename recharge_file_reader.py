@@ -302,6 +302,57 @@ def save_to_csv(filename_prefix, csv_path, dataframe):
     file_path = os.path.abspath(os.path.join(csv_path, file_name))
     dataframe.to_csv(file_path, index=False)
 
+def create_location_final_data(combined_df, csv_path):
+    """
+    This function will run different functions to create the summarized data and save it to csv.
+
+    Args:
+        combined_df (dataframe): Combined data from all directories
+        csv_path (dir): File path for the csv file
+    """
+    
+    script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
+    
+    location_and_total_recharge_data = location_and_recharge_df(combined_df)
+    filename_prefix = "total_recharge_per_location"
+    save_to_csv(filename_prefix,csv_path, location_and_total_recharge_data)
+    
+    script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+
+def create_category_final_data(combined_df, csv_path):
+    """
+    This function will run different functions to create the summarized data and save it to csv.
+
+    Args:
+        combined_df (dataframe): Combined data from all directories
+        csv_path (dir): File path for the csv file
+    """
+    
+    script_log.info("Analyzing 'Category' and 'RechargeAmount' data...")
+    
+    category_and_total_recharge_data = category_and_recharge_df(combined_df)
+    filename_prefix = "total_recharge_per_category"
+    save_to_csv(filename_prefix,csv_path, category_and_total_recharge_data)
+    
+    script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+    
+def create_paymentmethod_final_data(combined_df, csv_path):
+    """
+    This function will run different functions to create the summarized data and save it to csv.
+
+    Args:
+        combined_df (dataframe): Combined data from all directories
+        csv_path (dir): File path for the csv file
+    """
+    
+    script_log.info("Analyzing 'PaymentMethod' data...")
+    
+    payment_method_count = payment_method_df(combined_df)
+    filename_prefix = "count_per_payment_method"
+    save_to_csv(filename_prefix,csv_path, payment_method_count)
+    
+    script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+
 def initialize_logger(log_path, log_filename, logger_type):
     """
     Initializes a logger with a custom naming format for rotated files.
@@ -615,6 +666,57 @@ def insert_payment_method_data(csv_file, connection):
         connection.commit()
         cursor.close()
 
+def execute_location_data_functions(new_cursor, csv_path, new_connection):
+    """
+    This function executes functions to handle the insertion of data from the summarized location data
+
+    Args:
+        new_cursor (psycopg2.extensions.cursor): Cursor created to execute a command
+        csv_path (dir): Directory to get the csv file
+        new_connection (psycopg2.extensions.connection): Connection to the database
+    """
+    
+    create_table_locations_stats(new_cursor)
+    latest_csv_file = max(
+        [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_location")],
+        key=os.path.getctime
+        )
+    insert_location_data(latest_csv_file, new_connection)
+
+def execute_category_data_functions(new_cursor, csv_path, new_connection):
+    """
+    This function executes functions to handle the insertion of data from the summarized category data
+
+    Args:
+        new_cursor (psycopg2.extensions.cursor): Cursor created to execute a command
+        csv_path (dir): Directory to get the csv file
+        new_connection (psycopg2.extensions.connection): Connection to the database
+    """
+    
+    create_table_category_stats(new_cursor)
+    latest_csv_file = max(
+        [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_category")],
+        key=os.path.getctime
+        )
+    insert_category_data(latest_csv_file, new_connection)
+
+def execute_paymentmethod_data_functions(new_cursor, csv_path, new_connection):
+    """
+    This function executes functions to handle the insertion of data from the summarized payment data
+
+    Args:
+        new_cursor (psycopg2.extensions.cursor): Cursor created to execute a command
+        csv_path (dir): Directory to get the csv file
+        new_connection (psycopg2.extensions.connection): Connection to the database
+    """
+    
+    create_table_payment_method_stats(new_cursor)
+    latest_csv_file = max(
+        [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("count_per_payment_method")],
+        key=os.path.getctime
+        )
+    insert_payment_method_data(latest_csv_file, new_connection)
+
 def main():
     
     config = import_config_file()
@@ -627,32 +729,17 @@ def main():
     csv_path = config["directories"]["csv_path"]
     
     try:
-        script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
-        location_and_total_recharge_data = location_and_recharge_df(combined_df)
-        filename_prefix = "total_recharge_per_location"
-        save_to_csv(filename_prefix,csv_path, location_and_total_recharge_data)
-        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
-        
+        create_location_final_data(combined_df, csv_path)
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Location' and 'RechargeAmount' data: {e}\n")
     
     try:    
-        script_log.info("Analyzing 'Category' and 'RechargeAmount' data...")
-        category_and_total_recharge_data = category_and_recharge_df(combined_df)
-        filename_prefix = "total_recharge_per_category"
-        save_to_csv(filename_prefix,csv_path, category_and_total_recharge_data)
-        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
-        
+        create_category_final_data(combined_df, csv_path)
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Category' and 'RechargeAmount' data: {e}\n")
     
     try:
-        script_log.info("Analyzing 'PaymentMethod' data...")
-        payment_method_count = payment_method_df(combined_df)
-        filename_prefix = "count_per_payment_method"
-        save_to_csv(filename_prefix,csv_path, payment_method_count)
-        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
-        
+        create_paymentmethod_final_data(combined_df, csv_path)
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")
     
@@ -676,26 +763,9 @@ def main():
                 new_connection = connect_to_new_db(db_name, config)
                 new_cursor = cursor_for_new_db(new_connection)
                 
-                create_table_locations_stats(new_cursor)
-                latest_csv_file = max(
-                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_location")],
-                    key=os.path.getctime
-                    )
-                insert_location_data(latest_csv_file, new_connection)
-                
-                create_table_category_stats(new_cursor)
-                latest_csv_file = max(
-                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("total_recharge_per_category")],
-                    key=os.path.getctime
-                    )
-                insert_category_data(latest_csv_file, new_connection)
-                
-                create_table_payment_method_stats(new_cursor)
-                latest_csv_file = max(
-                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("count_per_payment_method")],
-                    key=os.path.getctime
-                    )
-                insert_payment_method_data(latest_csv_file, new_connection)
+                execute_location_data_functions(new_cursor, csv_path, new_connection)
+                execute_category_data_functions(new_cursor, csv_path, new_connection)
+                execute_paymentmethod_data_functions(new_cursor, csv_path, new_connection)
                 
                 new_connection.commit()
             
@@ -712,6 +782,7 @@ def main():
                 new_cursor.close()
             if new_connection is not None:
                 new_connection.close()
+                
             script_log.info("Connection closed.\n")
             
     else:
