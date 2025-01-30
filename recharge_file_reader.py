@@ -564,7 +564,57 @@ def insert_category_data(csv_file, connection):
     finally:
         connection.commit()
         cursor.close()
+
+def create_table_payment_method_stats(cursor):
+    """
+    This function will create a table for the paymentmethod ddata
+
+    Args:
+        cursor (psycopg2.extensions.cursor): Instance of the cursor to execute data
+    """
+    
+    try:
         
+        script_log.info("Creating table...")
+        table_name = "payment_method_count"
+        query = f"CREATE TABLE IF NOT EXISTS {table_name} (id SERIAL PRIMARY KEY, PaymentMethod VARCHAR(255), Total_Count INT);"
+        script_log.info(f"Executing query to create table '{table_name}' if not exists.")
+        
+        cursor.execute(query)
+        
+        script_log.info("Table created or already exists.")
+        
+    except Exception as e:
+        script_log.error(f"An error occured: {e}\n")
+
+def insert_payment_method_data(csv_file, connection):
+    """
+    This function inserts the paymentmethod data to the table.
+
+    Args:
+        csv_file (file): CSV file outputted by the script
+        connection (psycopg2.extensions.connection): Connection to the database
+    """
+    try:
+        cursor = connection.cursor()
+        
+        df = pd.read_csv(csv_file)
+        table = "payment_method_count"
+        
+        for index, row in df.iterrows():
+            query = f"INSERT INTO {table} (PaymentMethod, Total_Count) VALUES (%s, %s);"
+            cursor.execute(query, (str(row["PaymentMethod"]), int(row["Total_Count"])))
+        
+        connection.commit()
+        script_log.info(f"Successfully inserted data from {csv_file} into '{table}' table\n")
+    
+    except Exception as e:
+        script_log.error(f"Error inserting data into database: {e}\n")
+    
+    finally:
+        connection.commit()
+        cursor.close()
+
 def main():
     
     config = import_config_file()
@@ -639,6 +689,13 @@ def main():
                     key=os.path.getctime
                     )
                 insert_category_data(latest_csv_file, new_connection)
+                
+                create_table_payment_method_stats(new_cursor)
+                latest_csv_file = max(
+                    [os.path.join(csv_path, f) for f in os.listdir(csv_path) if f.startswith("count_per_payment_method")],
+                    key=os.path.getctime
+                    )
+                insert_payment_method_data(latest_csv_file, new_connection)
                 
                 new_connection.commit()
             
