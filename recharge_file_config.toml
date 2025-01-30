@@ -1,6 +1,7 @@
 ["directories"]
 input_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/sample_data"
 log_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/logs"
+csv_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Training/recharge-file-handling/csv"
 
 ["database"]
 db_host = "localhost"

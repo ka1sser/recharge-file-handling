@@ -217,108 +217,113 @@ def combine_matched_csv(files):
 def location_and_recharge_df(data):
     """
     This function isolates the data with "Location" and "RechargeAmount" as the key or header to the column.
-    It creates a new data frame using the these columns.
+    It creates a new data frame that has "Location" and "Total_RechargeAmount" as the values per location
+    was summed.
 
     Args:
         data (pandas.core.frame.DataFrame): Argument should be a dataframe that contains the data
 
     Returns:
-        location_and_recharge (pandas.core.frame.DataFrame): Returns a new data frame that only consist
-                                                            of "Location" and "RechargeAmount"
+        location_and_total_recharge (pandas.core.frame.DataFrame): Returns a new data frame that consist
+                                                            of "Location" and "Total_RechargeAmount"
     """
     
     df = pd.DataFrame(data)
     location_and_recharge = df[["Location", "RechargeAmount"]]
+    location_and_total_recharge = location_and_recharge.groupby("Location", as_index=False).sum()
+    location_and_total_recharge.rename(columns={"RechargeAmount": "Total_RechargeAmount"}, inplace=True)
     
-    return location_and_recharge
+    return location_and_total_recharge
 
-def stats_loc_recharge(data, loc):
+def create_location_csv(csv_path, dataframe):
     """
-    This function gets the sum of "RechargeAmount" per "Location"
+    This function will create a csv file for the location_and_total_recharge dataframe
 
     Args:
-        data (pandas.core.frame.DataFrame): Data frame that contains the "Location" and "RechargeAmount" data columns
-        loc (str): A string containing the value from "Location" namely "X10", "X11", "X12", and "X13"
-
-    Returns:
-        loc_data_total_recharge (int): Sum of the total "RechargeAmount" from data that has the value inputted in loc
+        csv_path (dir): Directory for the csv_file path
+        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "Location" and "Total_RechargeAmount"
     """
+    file_name = "total_recharge_per_location.csv"
     
-    
-    loc_data = data[data["Location"] == loc]
-    loc_data_total_recharge = loc_data["RechargeAmount"].sum()
-    
-    return loc_data_total_recharge
-    
+    file_path = os.path.abspath(os.path.join(csv_path, file_name))
+    dataframe.to_csv(file_path, index=False)
+
 def category_and_recharge_df(data):
     """
     This function isolates the data with "Category" and "RechargeAmount" as the key or header to the column.
-    It creates a new data frame using the these columns.
+    It creates a new data frame that has "Category" and "Total_RechargeAmount" as the values per category
+    was summed.
 
     Args:
         data (pandas.core.frame.DataFrame): Argument should be a dataframe that contains the data
 
     Returns:
-        category_and_recharge (pandas.core.frame.DataFrame): Returns a new data frame that only consist
-                                                            of "Category" and "RechargeAmount"
+        category_and_total_recharge (pandas.core.frame.DataFrame): Returns a new data frame that consist
+                                                            of "Category" and "Total_RechargeAmount"
     """
 
     df = pd.DataFrame(data)
     category_and_recharge = df[["Category", "RechargeAmount"]]
+    category_and_total_recharge = category_and_recharge.groupby("Category", as_index=False).sum()
+    category_and_total_recharge.rename(columns={"RechargeAmount": "Total_RechargeAmount"}, inplace=True)
+    
+    return category_and_total_recharge
 
-    return category_and_recharge
-
-def stats_cat_recharge(data, cat):
+def create_category_csv(csv_path, dataframe):
     """
-    This function gets the sum of "RechargeAmount" per "Category"
+    This function will create a csv file for the category_and_total_recharge dataframe
 
     Args:
-        data (pandas.core.frame.DataFrame): Data frame that contains the "Category" and "RechargeAmount" data columns
-        cat (str): A string containing the value from "Category" namely "YTH", "STD", "BSC", and "SPL"
-
-    Returns:
-        cat_data_total_recharge (int): Sum of the total "RechargeAmount" from data that has the value inputted in cat
+        csv_path (dir): Directory for the csv_file path
+        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "Category" and "Total_RechargeAmount"
     """
+    file_name = "total_recharge_per_category.csv"
     
-    cat_data = data[data["Category"] == cat]
-    cat_data_total_recharge = cat_data["RechargeAmount"].sum()
-    
-    return cat_data_total_recharge
+    file_path = os.path.abspath(os.path.join(csv_path, file_name))
+    dataframe.to_csv(file_path, index=False)
 
 def payment_method_df(data):
     """
     This function isolates the data with "PaymentMethod" as the key or header to the column.
-    It creates a new data frame using the this column.
+    It creates a new data frame using the this column and the count for each payment method.
 
     Args:
         data (pandas.core.frame.DataFrame): Argument should be a dataframe that contains the data
 
     Returns:
-        payment_method (pandas.core.frame.DataFrame): Returns a new data frame that only consist of "PaymentMethod"
+        payment_method (pandas.core.frame.DataFrame): Returns a new data frame that consists of "PaymentMethod" and "Total_Count"
     """
     
     df = pd.DataFrame(data)
-    payment_method = df[["PaymentMethod"]]
-
-    return payment_method
-
-
-def stats_payment_method(data, pm):
+    payment_method_total = df.groupby("PaymentMethod", as_index=False).size()
+    payment_method_total.rename(columns={"size": "Total_Count"}, inplace=True)
+    
     """
-    This function gets the count of "PaymentMethod" per value
+    payment_method_total = df["PaymentMethod"].value_counts().reset_index()
+    payment_method_total.columns = ["PaymentMethod", "Total_Count"]
+    
+    payment_mapping = {
+        1: "Cash",
+        2: "Credit Card",
+        3: "Paytm"
+    }
+    
+    payment_method_total["PaymentMethod"] = payment_method_total["PaymentMethod"].replace(payment_mapping)"""
+    
+    return payment_method_total
+
+def create_payment_csv(csv_path, dataframe):
+    """
+    This function will create a csv file for the payment_method_total dataframe
 
     Args:
-        data (pandas.core.frame.DataFrame): Data frame that contains the "PaymentMethod" data column
-        pm (int): An int containing the value from "PaymentMethod" namely 1, 2, and 3
-
-    Returns:
-        total_pm_count (int): Count of the inputted pm
+        csv_path (dir): Directory for the csv_file path
+        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "PaymentMethod" and "Total_Count"
     """
+    file_name = "total_payment_count.csv"
     
-    pm_data = data[data["PaymentMethod"] == pm]
-    total_pm_count = len(pm_data)
-    
-    return total_pm_count
+    file_path = os.path.abspath(os.path.join(csv_path, file_name))
+    dataframe.to_csv(file_path, index=False)
 
 def initialize_logger(log_path, log_filename, logger_type):
     """
@@ -346,92 +351,7 @@ def initialize_logger(log_path, log_filename, logger_type):
     logger.addHandler(handler)
 
     return logger
-
-
-
-def get_location_recharge_data(log_path, combined_df):
-    """
-    This function will output the data collected from the combined data frame via log
-
-    Args:
-        log_path (dir): Directory where the log will be outputted
-        combined_df (pandas.core.frame.DataFrame): Data frame containing the combined data of "Location" and "RechargeAmount"
-    """
-    
-    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    log_file_name = f"loc_and_total_recharge_amt - {current_date}.log"
-    loc_logger = initialize_logger(log_path, log_file_name, "location_handler")
-    
-    location_and_recharge = location_and_recharge_df(combined_df)
-    
-    x10_data = stats_loc_recharge(location_and_recharge, "X10")
-    x11_data = stats_loc_recharge(location_and_recharge, "X11")
-    x12_data = stats_loc_recharge(location_and_recharge, "X12")
-    x13_data = stats_loc_recharge(location_and_recharge, "X13")
-    
-    loc_logger.info(f"Analyzing Location and RechargeAmount data as of {current_date}...\n")
-    loc_logger.info("Here is the data for total RechargeAmount per Location:")
-    loc_logger.info(f"Location\t Total_RechargeAmount")
-    loc_logger.info(f"X10:\t\t {x10_data}")
-    loc_logger.info(f"X11:\t\t {x11_data}")
-    loc_logger.info(f"X12:\t\t {x12_data}")
-    loc_logger.info(f"X13:\t\t {x13_data}")
-    
-def get_category_recharge_data(log_path, combined_df):
-    """
-    This function will output the data collected from the combined data frame via log
-
-    Args:
-        log_path (dir): Directory where the log will be outputted
-        combined_df (pandas.core.frame.DataFrame): Data frame containing the combined data of "Category" and "RechargeAmount"
-    """
-    
-    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    log_file_name = f"cat_and_total_recharge_amt - {current_date}.log"
-    cat_logger = initialize_logger(log_path, log_file_name, "category_handler")
-    
-    cat_and_recharge = category_and_recharge_df(combined_df)
-    
-    
-    yth_data = stats_cat_recharge(cat_and_recharge, "YTH")
-    std_data = stats_cat_recharge(cat_and_recharge, "STD")
-    bsc_data = stats_cat_recharge(cat_and_recharge, "BSC")
-    spl_data = stats_cat_recharge(cat_and_recharge, "SPL")
-    
-    cat_logger.info(f"Analyzing Category and RechargeAmount data as of {current_date}...\n")
-    cat_logger.info("Here is the data for total RechargeAmount per Category:")
-    cat_logger.info(f"Category\t Total_RechargeAmount")
-    cat_logger.info(f"YTH:\t\t {yth_data}")
-    cat_logger.info(f"STD:\t\t {std_data}")
-    cat_logger.info(f"BSC:\t\t {bsc_data}")
-    cat_logger.info(f"SPL:\t\t {spl_data}")
-    
-def get_payment_method_data(log_path, combined_df):
-    """
-    This function will output the data collected from the data frame via log
-
-    Args:
-        log_path (dir): Directory where the log will be outputted
-        combined_df (pandas.core.frame.DataFrame): Data frame containing the data of "PaymentMethod"
-    """
-    
-    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    log_file_name = f"payment_method_count - {current_date}.log"
-    pm_logger = initialize_logger(log_path, log_file_name, "payment_handler")
-    
-    payment = payment_method_df(combined_df)
-    
-    
-    cash_data = stats_payment_method(payment, 1)
-    cc_data = stats_payment_method(payment, 2)
-    paytm_data = stats_payment_method(payment, 3)
-
-    pm_logger.info(f"Analyzing Location and RechargeAmount data as of {current_date}...\n")
-    pm_logger.info("Here is the data for total RechargeAmount per Location:")
-    pm_logger.info(f"PaymentMethod\t\t Total_Count")
-    pm_logger.info(f"Cash:\t\t\t\t {cash_data}")
-    pm_logger.info(f"Credit Card:\t\t {cc_data}")
-    pm_logger.info(f"Paytm:\t\t\t\t {paytm_data}")
+ 
 
 def connect_to_db(config):
     """
@@ -484,7 +404,8 @@ def open_cursor_db(connection):
     except Exception as e:
         script_log.error(f"An error has occured: {e}")
 
-def create_table(cursor):
+
+'''def create_table(cursor):
     """
     This function executes a PostgreSQL query to create a table
 
@@ -517,7 +438,25 @@ def insert_entire_logs(cursor, log_folder):
     
     except Exception as e:
         script_log.error(f"Failed to insert log file: {e}\n")
+'''
+def create_location_database(cursor):
+    query = "CREATE DATABASE location_data;"
+    cursor.execute(query)
+
+def create_table_locations_stats(cursor):
+    try:
         
+        script_log.info("Creating table...")
+        table_name = "location_stats"
+        query = f"CREATE TABLE IF NOT EXISTS {table_name} (id SERIAL PRIMARY KEY, Location VARCHAR(255), Total_RechargeAmount INT);"
+        script_log.info(f"Executing query to create table '{table_name}' if not exists.")
+        cursor.execute(query)
+        
+        script_log.info("Table created or already exists.\n")
+        
+    except Exception as e:
+        script_log.error(f"An error occured: {e}\n")
+       
 def main():
     
     config = import_config_file()
@@ -527,8 +466,18 @@ def main():
     csv_files_to_read = get_csv_files_to_read(input_path)
     combined_df = combine_matched_csv(csv_files_to_read)
     send_to_database_operation = config["operation"]["send_to_database"]
+    csv_path = config["directories"]["csv_path"]
     
-    try:
+    db = location_and_recharge_df(combined_df)
+    db2 = category_and_recharge_df(combined_df)
+    db3 = payment_method_df(combined_df)
+    
+    create_location_csv(csv_path, db)
+    create_category_csv(csv_path, db2)
+    create_payment_csv(csv_path, db3)
+
+    
+    """try:
         script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
         get_location_recharge_data(log_path, combined_df)
         script_log.info("Done with the analysis. Refer to the logs for details.\n")
@@ -555,8 +504,7 @@ def main():
         try:    
             db_connection = connect_to_db(config)
             db_cursor = open_cursor_db(db_connection)
-            create_table(db_cursor)
-            insert_entire_logs(db_cursor, log_path)
+            create_table_locations_stats(db_cursor)
             db_connection.commit()
             
         except Exception as e:
@@ -568,12 +516,12 @@ def main():
             script_log.info("Connection closed.")
     
     script_log.info(f"Operation send_to_database: {send_to_database_operation}")
-    script_log.info("Skipping copying of files to postgres database...")
+    script_log.info("Skipping copying of files to postgres database...")"""
     
 if __name__ == "__main__":
     config = import_config_file()
     log_path = import_log_path(config)
-    current_date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    current_date = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     script_log = initialize_logger(log_path, f"recharge_file_reader - {current_date}.log", "script_handler")
     
     script_log.info("##############################################################################")
