@@ -235,19 +235,6 @@ def location_and_recharge_df(data):
     
     return location_and_total_recharge
 
-def create_location_csv(csv_path, dataframe):
-    """
-    This function will create a csv file for the location_and_total_recharge dataframe
-
-    Args:
-        csv_path (dir): Directory for the csv_file path
-        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "Location" and "Total_RechargeAmount"
-    """
-    file_name = "total_recharge_per_location.csv"
-    
-    file_path = os.path.abspath(os.path.join(csv_path, file_name))
-    dataframe.to_csv(file_path, index=False)
-
 def category_and_recharge_df(data):
     """
     This function isolates the data with "Category" and "RechargeAmount" as the key or header to the column.
@@ -268,19 +255,6 @@ def category_and_recharge_df(data):
     category_and_total_recharge.rename(columns={"RechargeAmount": "Total_RechargeAmount"}, inplace=True)
     
     return category_and_total_recharge
-
-def create_category_csv(csv_path, dataframe):
-    """
-    This function will create a csv file for the category_and_total_recharge dataframe
-
-    Args:
-        csv_path (dir): Directory for the csv_file path
-        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "Category" and "Total_RechargeAmount"
-    """
-    file_name = "total_recharge_per_category.csv"
-    
-    file_path = os.path.abspath(os.path.join(csv_path, file_name))
-    dataframe.to_csv(file_path, index=False)
 
 def payment_method_df(data):
     """
@@ -312,15 +286,17 @@ def payment_method_df(data):
     
     return payment_method_total
 
-def create_payment_csv(csv_path, dataframe):
+
+def save_to_csv(filename_prefix, csv_path, dataframe):
     """
-    This function will create a csv file for the payment_method_total dataframe
+    This function will create a csv file for the location_and_total_recharge dataframe
 
     Args:
         csv_path (dir): Directory for the csv_file path
-        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "PaymentMethod" and "Total_Count"
+        dataframe (pandas.core.frame.DataFrame): Dataframe consisting of "Location" and "Total_RechargeAmount"
     """
-    file_name = "total_payment_count.csv"
+    current_date = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    file_name = f"{filename_prefix}_{current_date}.csv"
     
     file_path = os.path.abspath(os.path.join(csv_path, file_name))
     dataframe.to_csv(file_path, index=False)
@@ -467,15 +443,6 @@ def main():
     combined_df = combine_matched_csv(csv_files_to_read)
     send_to_database_operation = config["operation"]["send_to_database"]
     csv_path = config["directories"]["csv_path"]
-    
-    db = location_and_recharge_df(combined_df)
-    db2 = category_and_recharge_df(combined_df)
-    db3 = payment_method_df(combined_df)
-    
-    create_location_csv(csv_path, db)
-    create_category_csv(csv_path, db2)
-    create_payment_csv(csv_path, db3)
-
     
     """try:
         script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
