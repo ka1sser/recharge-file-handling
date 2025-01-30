@@ -19,6 +19,7 @@ from datetime import datetime
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import psycopg2
+import psycopg2.sql
 
 def import_config_file():
     
@@ -328,7 +329,6 @@ def initialize_logger(log_path, log_filename, logger_type):
 
     return logger
  
-
 def connect_to_db(config):
     """
     This function will create a connection for the postgres db
@@ -375,57 +375,81 @@ def open_cursor_db(connection):
     try:
         cursor = connection.cursor()
         script_log.info("Creating cursor for command execution...")
+        script_log.info("Cursor created.\n")
         return cursor
     
     except Exception as e:
         script_log.error(f"An error has occured: {e}")
 
-
-'''def create_table(cursor):
-    """
-    This function executes a PostgreSQL query to create a table
-
-    Args:
-        cursor (extensions): Cursor instance for executing commands
-    """
+def create_recharge_file_stats_db(db_name, cursor, connection):
+    
+    script_log.info(f"Creating database '{db_name}'")
+    cursor.connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
     
     try:
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname= %s;", (db_name,))
+        exists = cursor.fetchone()
         
-        script_log.info("Creating table...")
-        
-        query = "CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, file_name VARCHAR(255), log_content TEXT);"
-        script_log.info(f"Executing query to create table 'logs' if not exists.")
-        cursor.execute(query)
-        
-        script_log.info("Table created or already exists.\n")
-        
+        if not exists:    
+            try:
+                query = psycopg2.sql.SQL("CREATE DATABASE {}").format(psycopg2.sql.Identifier(db_name))
+                cursor.execute(query)
+                script_log.info(f"Database '{db_name}' has been created.\n")
+            
+            except Exception as e:
+                script_log.error(f"An error has occured while creating new database '{db_name}': {e}\n")
+    
+        else:
+            script_log.warning(f"Database '{db_name}' already exists. Skipping database creation.\n")
+            
+    except Exception as e:
+        script_log.error(f"An error occured connected to the creation of '{db_name}': {e}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+ 
+def connect_to_new_db(db_name, config):   
+    
+    db_host = config["database"]["db_host"]
+    db_user = config["database"]["db_user"]
+    db_password = config["database"]["db_password"]
+    
+    try:
+        new_connection = psycopg2.connect(
+            dbname = db_name,
+            user = db_user,
+            password = db_password,
+            host = db_host
+        )
+
+        script_log.info(f"Creating connection for user:{db_user} to database:{db_name}")
+        script_log.info(f"Connection status: {new_connection.status}\n")
+
+        return new_connection
+    
     except Exception as e:
         script_log.error(f"An error occured: {e}\n")
 
-def insert_entire_logs(cursor, log_folder):
+def cursor_for_new_db(connection):
+    
     try:
-        for file_name in os.listdir(log_folder):
-            file_path = os.path.abspath(os.path.join(log_folder, file_name))
-            if os.path.isfile(file_path) and file_name.endswith(".log"):
-                with open(file_path, 'r') as file:
-                    content = file.read()
-                    cursor.execute("INSERT INTO logs (file_name, log_content) VALUES (%s, %s);", (file_name, content))
-            script_log.info(f"Inserted log file: {file_name} as a single row.")
+        cursor = connection.cursor()
+        script_log.info("Creating cursor for command execution...\n")
+        
+        return cursor
     
     except Exception as e:
-        script_log.error(f"Failed to insert log file: {e}\n")
-'''
-def create_location_database(cursor):
-    query = "CREATE DATABASE location_data;"
-    cursor.execute(query)
-
+        script_log.error(f"An error has occured: {e}")
+        
 def create_table_locations_stats(cursor):
     try:
         
         script_log.info("Creating table...")
-        table_name = "location_stats"
+        table_name = "total_recharge_amount_per_location"
         query = f"CREATE TABLE IF NOT EXISTS {table_name} (id SERIAL PRIMARY KEY, Location VARCHAR(255), Total_RechargeAmount INT);"
         script_log.info(f"Executing query to create table '{table_name}' if not exists.")
+        
         cursor.execute(query)
         
         script_log.info("Table created or already exists.\n")
@@ -444,46 +468,78 @@ def main():
     send_to_database_operation = config["operation"]["send_to_database"]
     csv_path = config["directories"]["csv_path"]
     
-    """try:
+    try:
         script_log.info("Analyzing 'Location' and 'RechargeAmount' data...")
-        get_location_recharge_data(log_path, combined_df)
-        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+        location_and_total_recharge_data = location_and_recharge_df(combined_df)
+        filename_prefix = "total_recharge_per_location"
+        save_to_csv(filename_prefix,csv_path, location_and_total_recharge_data)
+        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+        
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Location' and 'RechargeAmount' data: {e}\n")
     
     try:    
         script_log.info("Analyzing 'Category' and 'RechargeAmount' data...")
-        get_category_recharge_data(log_path, combined_df)
-        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+        category_and_total_recharge_data = category_and_recharge_df(combined_df)
+        filename_prefix = "total_recharge_per_category"
+        save_to_csv(filename_prefix,csv_path, category_and_total_recharge_data)
+        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+        
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Category' and 'RechargeAmount' data: {e}\n")
     
     try:
         script_log.info("Analyzing 'PaymentMethod' data...")
-        get_payment_method_data(log_path, combined_df)
-        script_log.info("Done with the analysis. Refer to the logs for details.\n")
+        payment_method_count = payment_method_df(combined_df)
+        filename_prefix = "count_per_payment_method"
+        save_to_csv(filename_prefix,csv_path, payment_method_count)
+        script_log.info("Done with the analysis. Refer to the csv file for details.\n")
+        
     except Exception as e:
         script_log.error(f"An error occured while analyzing 'Payment' data: {e}\n")
     
+    new_cursor = None
+    new_connection = None
+    
     if send_to_database_operation == "YES":
+        
         script_log.info(f"Operation send_to_database: {send_to_database_operation}")
         script_log.info("Executing transfer...")
-        try:    
+        
+        try:
+             
             db_connection = connect_to_db(config)
             db_cursor = open_cursor_db(db_connection)
-            create_table_locations_stats(db_cursor)
-            db_connection.commit()
+            
+            db_name = "recharge_file_stats_db" 
+            create_recharge_file_stats_db(db_name,db_cursor, db_connection)
+            
+            try:
+                new_connection = connect_to_new_db(db_name, config)
+                new_cursor = cursor_for_new_db(new_connection)
+                
+                create_table_locations_stats(new_cursor)
+                
+                new_connection.commit()
+            
+            except Exception as e:
+                script_log.error(f"An error occured while creating a new connection or new cursor: {e}\n")
             
         except Exception as e:
-            script_log.warning(f"An error has occured: {e}")
+            script_log.error(f"An error has occured: {e}")
+            
         finally:
             script_log.info("Closing connection...")
-            db_cursor.close()
-            db_connection.close()
-            script_log.info("Connection closed.")
-    
-    script_log.info(f"Operation send_to_database: {send_to_database_operation}")
-    script_log.info("Skipping copying of files to postgres database...")"""
+            
+            if new_cursor is not None:
+                new_cursor.close()
+            if new_connection is not None:
+                new_connection.close()
+            script_log.info("Connection closed.\n")
+            
+    else:
+        script_log.info(f"Operation send_to_database: {send_to_database_operation}")
+        script_log.info("Skipping copying of files to postgres database...\n")
     
 if __name__ == "__main__":
     config = import_config_file()

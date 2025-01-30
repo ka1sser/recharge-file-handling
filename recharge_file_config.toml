@@ -5,7 +5,7 @@ csv_path = "C:/Users/eserkai/OneDrive - Ericsson/Documents/Programming/Python/Tr
 
 ["database"]
 db_host = "localhost"
-db_name = "logdata"
+db_name = "postgres" #default database to establish connection
 db_user = "postgres"
 db_password = "training"
 
